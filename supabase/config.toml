@@ -1,0 +1,16 @@
+project_id = "zjpwjrpekewsslfdqqet"
+
+[api]
+enabled = true
+
+[functions.admin-auth]
+verify_jwt = false
+
+[functions.admin-quizzes]
+verify_jwt = false
+
+[functions.extract-quiz]
+verify_jwt = false
+
+[functions.submit-quiz]
+verify_jwt = false
