@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import QuizCard from "@/components/QuizCard";
@@ -39,7 +39,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
-      <header className="gradient-hero px-4 pb-16 pt-12 text-center">
+      <header className="gradient-hero px-4 pb-16 pt-12 text-center relative">
+        <Link
+          to="/admin/login"
+          className="absolute top-4 right-4 text-primary-foreground/50 hover:text-primary-foreground/80 text-xs transition-colors"
+        >
+          Admin
+        </Link>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
