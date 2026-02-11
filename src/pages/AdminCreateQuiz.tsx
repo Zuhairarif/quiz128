@@ -33,18 +33,16 @@ export default function AdminCreateQuiz() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Read PDF as text (using FileReader for text-based PDFs)
     setExtracting(true);
     try {
-      const text = await file.text();
-      if (!text.trim()) {
-        toast.error("Could not extract text. Try a text-based PDF.");
-        setExtracting(false);
-        return;
-      }
+      // Convert file to base64 for Gemini to read directly
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+      );
 
-      const result = await adminApi.extractQuiz(text);
-      setTitle(result.title || file.name.replace(".pdf", ""));
+      const result = await adminApi.extractQuiz(base64, file.name);
+      setTitle(result.title || file.name.replace(/\.(pdf|txt)$/i, ""));
       setQuestions(result.questions || []);
       setHasAnswers(result.has_answers || false);
       toast.success(`Extracted ${result.questions?.length || 0} questions`);

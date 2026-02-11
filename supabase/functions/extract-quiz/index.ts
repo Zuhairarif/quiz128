@@ -28,119 +28,106 @@ serve(async (req) => {
   }
 
   try {
-    const { pdf_text } = await req.json();
+    const { pdf_base64, file_name } = await req.json();
 
-    if (!pdf_text || pdf_text.trim().length === 0) {
-      return new Response(JSON.stringify({ error: "No PDF text provided" }), {
+    if (!pdf_base64) {
+      return new Response(JSON.stringify({ error: "No PDF data provided" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
-    const systemPrompt = `You are a quiz extraction AI. Extract MCQ questions from the provided text.
+    const mimeType = file_name?.endsWith(".txt") ? "text/plain" : "application/pdf";
+
+    const prompt = `You are a quiz extraction AI. Analyze this document and extract ALL MCQ (Multiple Choice Questions) from it.
 
 Rules:
-- Extract ALL questions found in the text
+- Extract EVERY question found in the document
 - Each question must have exactly 4 options (A, B, C, D)
-- If correct answers are indicated in the text, include them
+- If correct answers are marked/indicated anywhere in the document, identify them
 - If correct answers are NOT found, set correct_option to null
-- Return valid JSON only, no markdown
+- Read the document carefully including any answer keys, solutions, or marked answers
+- Support both typed text and scanned/image-based PDFs
 
-Output format:
+Return a JSON object with this exact structure (no markdown, no code blocks, just pure JSON):
 {
   "title": "Quiz title extracted or generated from content",
   "questions": [
     {
       "question_text": "The question text",
       "option_a": "Option A text",
-      "option_b": "Option B text", 
+      "option_b": "Option B text",
       "option_c": "Option C text",
       "option_d": "Option D text",
       "correct_option": "A" or "B" or "C" or "D" or null
     }
   ],
-  "has_answers": true/false
+  "has_answers": true or false
 }`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Extract MCQ questions from this text:\n\n${pdf_text}` },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "extract_quiz",
-              description: "Extract structured MCQ quiz data from text",
-              parameters: {
-                type: "object",
-                properties: {
-                  title: { type: "string", description: "Quiz title" },
-                  questions: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        question_text: { type: "string" },
-                        option_a: { type: "string" },
-                        option_b: { type: "string" },
-                        option_c: { type: "string" },
-                        option_d: { type: "string" },
-                        correct_option: { type: "string", enum: ["A", "B", "C", "D"], description: "Correct option letter, or omit if unknown" },
-                      },
-                      required: ["question_text", "option_a", "option_b", "option_c", "option_d"],
-                      additionalProperties: false,
-                    },
+    // Use Gemini API directly with file data for proper PDF reading
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: pdf_base64,
                   },
-                  has_answers: { type: "boolean", description: "Whether correct answers were found in the text" },
                 },
-                required: ["title", "questions", "has_answers"],
-                additionalProperties: false,
-              },
+                { text: prompt },
+              ],
             },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json",
           },
-        ],
-        tool_choice: { type: "function", function: { name: "extract_quiz" } },
-      }),
-    });
+        }),
+      }
+    );
 
     if (!response.ok) {
+      const errText = await response.text();
+      console.error("Gemini API error:", response.status, errText);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errText = await response.text();
-      console.error("AI error:", response.status, errText);
-      throw new Error("AI extraction failed");
+      throw new Error(`Gemini API failed: ${response.status}`);
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!toolCall) {
-      throw new Error("AI did not return structured data");
+    if (!textContent) {
+      throw new Error("Gemini did not return any content");
     }
 
-    const extracted = JSON.parse(toolCall.function.arguments);
+    // Parse the JSON response
+    let extracted;
+    try {
+      extracted = JSON.parse(textContent);
+    } catch {
+      // Try to extract JSON from the response if it has markdown wrapping
+      const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        extracted = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error("Could not parse AI response as JSON");
+      }
+    }
 
     return new Response(JSON.stringify(extracted), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -36,7 +36,7 @@ export const adminApi = {
     return res.json();
   },
 
-  async extractQuiz(pdfText: string) {
+  async extractQuiz(pdfBase64: string, fileName: string) {
     const token = localStorage.getItem("admin_token");
     const res = await fetch(`${SUPABASE_URL}/functions/v1/extract-quiz`, {
       method: "POST",
@@ -44,7 +44,7 @@ export const adminApi = {
         "Content-Type": "application/json",
         "x-admin-token": token || "",
       },
-      body: JSON.stringify({ pdf_text: pdfText }),
+      body: JSON.stringify({ pdf_base64: pdfBase64, file_name: fileName }),
     });
     if (!res.ok) {
       const err = await res.json();
