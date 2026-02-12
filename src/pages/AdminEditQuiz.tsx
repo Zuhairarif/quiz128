@@ -4,9 +4,11 @@ import { adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Save, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
+import LatexRenderer from "@/components/LatexRenderer";
 
 type Question = {
   id?: string;
@@ -18,6 +20,26 @@ type Question = {
   correct_option: string | null;
 };
 
+const CLASS_OPTIONS = [
+  { label: "Class 6", value: "6" },
+  { label: "Class 9", value: "9" },
+  { label: "Class 11", value: "11" },
+];
+
+const TEST_TYPES = [
+  { label: "Topic Wise Test", value: "topic_wise" },
+  { label: "Full Test", value: "full_test" },
+  { label: "PYQs", value: "pyqs" },
+];
+
+const SUBJECTS = [
+  { label: "Science", value: "science" },
+  { label: "Maths", value: "maths" },
+  { label: "English", value: "english" },
+  { label: "Hindi", value: "hindi" },
+  { label: "Indo-Islamic", value: "indo_islamic" },
+];
+
 export default function AdminEditQuiz() {
   const { quizId } = useParams();
   const navigate = useNavigate();
@@ -26,6 +48,9 @@ export default function AdminEditQuiz() {
   const [marksPerQ, setMarksPerQ] = useState(1);
   const [totalTime, setTotalTime] = useState(30);
   const [status, setStatus] = useState("draft");
+  const [classLevel, setClassLevel] = useState("");
+  const [testType, setTestType] = useState("");
+  const [subject, setSubject] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,6 +63,9 @@ export default function AdminEditQuiz() {
       setMarksPerQ(quiz.marks_per_question);
       setTotalTime(quiz.total_time_minutes);
       setStatus(quiz.status);
+      setClassLevel(quiz.class_level || "");
+      setTestType(quiz.test_type || "");
+      setSubject(quiz.subject || "");
       setQuestions(
         (quiz.questions || [])
           .sort((a: any, b: any) => a.question_order - b.question_order)
@@ -80,6 +108,9 @@ export default function AdminEditQuiz() {
         marks_per_question: marksPerQ,
         total_time_minutes: totalTime,
         status: saveStatus,
+        class_level: classLevel || null,
+        test_type: testType || null,
+        subject: testType === "topic_wise" ? subject || null : null,
         questions,
       });
       toast.success("Quiz saved!");
@@ -111,11 +142,46 @@ export default function AdminEditQuiz() {
       </header>
 
       <main className="mx-auto max-w-4xl p-4 py-8">
-        <div className="mb-8 grid gap-4 sm:grid-cols-3">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">Quiz Title</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Class</label>
+            <Select value={classLevel} onValueChange={setClassLevel}>
+              <SelectTrigger><SelectValue placeholder="Select Class" /></SelectTrigger>
+              <SelectContent>
+                {CLASS_OPTIONS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Test Type</label>
+            <Select value={testType} onValueChange={(v) => { setTestType(v); if (v !== "topic_wise") setSubject(""); }}>
+              <SelectTrigger><SelectValue placeholder="Select Test Type" /></SelectTrigger>
+              <SelectContent>
+                {TEST_TYPES.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {testType === "topic_wise" && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Subject</label>
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                <SelectContent>
+                  {SUBJECTS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">Marks per Question</label>
             <Input type="number" min={1} value={marksPerQ} onChange={(e) => setMarksPerQ(Number(e.target.value))} />
@@ -152,6 +218,10 @@ export default function AdminEditQuiz() {
                 </span>
               </div>
 
+              <div className="mb-2 rounded-lg bg-muted/50 p-3 text-sm">
+                <LatexRenderer text={q.question_text} />
+              </div>
+
               <Textarea
                 value={q.question_text}
                 onChange={(e) => updateQuestion(i, "question_text", e.target.value)}
@@ -174,11 +244,15 @@ export default function AdminEditQuiz() {
                       >
                         {opt}
                       </button>
-                      <Input
-                        value={q[field] as string}
-                        onChange={(e) => updateQuestion(i, field, e.target.value)}
-                        className="flex-1"
-                      />
+                      <div className="flex-1 space-y-1">
+                        <Input
+                          value={q[field] as string}
+                          onChange={(e) => updateQuestion(i, field, e.target.value)}
+                        />
+                        <div className="text-xs px-1">
+                          <LatexRenderer text={q[field] as string} />
+                        </div>
+                      </div>
                     </div>
                   );
                 })}

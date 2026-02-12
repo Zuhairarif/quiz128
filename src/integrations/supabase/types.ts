@@ -107,28 +107,37 @@ export type Database = {
       }
       quizzes: {
         Row: {
+          class_level: string | null
           created_at: string
           id: string
           marks_per_question: number
           status: string
+          subject: string | null
+          test_type: string | null
           title: string
           total_time_minutes: number
           updated_at: string
         }
         Insert: {
+          class_level?: string | null
           created_at?: string
           id?: string
           marks_per_question?: number
           status?: string
+          subject?: string | null
+          test_type?: string | null
           title: string
           total_time_minutes?: number
           updated_at?: string
         }
         Update: {
+          class_level?: string | null
           created_at?: string
           id?: string
           marks_per_question?: number
           status?: string
+          subject?: string | null
+          test_type?: string | null
           title?: string
           total_time_minutes?: number
           updated_at?: string

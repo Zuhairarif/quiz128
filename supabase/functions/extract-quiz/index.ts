@@ -44,7 +44,28 @@ serve(async (req) => {
 
     const prompt = `You are a quiz extraction AI. Analyze this document and extract ALL MCQ (Multiple Choice Questions) from it.
 
-Rules:
+IMPORTANT FORMATTING RULES:
+
+1. Convert ALL mathematical expressions into proper LaTeX format.
+2. Use:
+   - \\frac{}{} for fractions
+   - ^{} for superscripts
+   - _{} for subscripts
+   - \\times for multiplication where appropriate
+   - \\left( \\right) for brackets when needed
+3. Wrap all mathematical expressions inside double dollar signs: $$ ... $$
+4. DO NOT output linear math such as:
+   a/V^2, ML^2T^-2, e^-kt
+   Instead convert them into proper LaTeX:
+   $$\\frac{a}{V^2}$$, $$ML^2T^{-2}$$, $$e^{-kt}$$
+5. Preserve question numbering.
+6. Preserve multiple choice options (A, B, C, D).
+7. If dimensional formula appears like [ML^2T^-2], convert it to: $$[ML^2T^{-2}]$$
+8. If equations appear inline within sentences, convert them into LaTeX inline format using: $ ... $
+9. If a full standalone equation appears, use: $$ ... $$
+10. Ensure all LaTeX backslashes are properly escaped for JSON (use double backslashes \\\\).
+
+EXTRACTION RULES:
 - Extract EVERY question found in the document
 - Each question must have exactly 4 options (A, B, C, D)
 - If correct answers are marked/indicated anywhere in the document, identify them
@@ -57,18 +78,17 @@ Return a JSON object with this exact structure (no markdown, no code blocks, jus
   "title": "Quiz title extracted or generated from content",
   "questions": [
     {
-      "question_text": "The question text",
-      "option_a": "Option A text",
-      "option_b": "Option B text",
-      "option_c": "Option C text",
-      "option_d": "Option D text",
+      "question_text": "The question text with LaTeX formatting",
+      "option_a": "Option A text with LaTeX if needed",
+      "option_b": "Option B text with LaTeX if needed",
+      "option_c": "Option C text with LaTeX if needed",
+      "option_d": "Option D text with LaTeX if needed",
       "correct_option": "A" or "B" or "C" or "D" or null
     }
   ],
   "has_answers": true or false
 }`;
 
-    // Use Gemini API directly with file data for proper PDF reading
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -115,12 +135,10 @@ Return a JSON object with this exact structure (no markdown, no code blocks, jus
       throw new Error("Gemini did not return any content");
     }
 
-    // Parse the JSON response
     let extracted;
     try {
       extracted = JSON.parse(textContent);
     } catch {
-      // Try to extract JSON from the response if it has markdown wrapping
       const jsonMatch = textContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         extracted = JSON.parse(jsonMatch[0]);
