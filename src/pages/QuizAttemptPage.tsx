@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Send, User } from "lucide-react";
 import { toast } from "sonner";
+import LatexRenderer from "@/components/LatexRenderer";
 
 type Question = {
   id: string;
@@ -188,7 +189,7 @@ export default function QuizAttemptPage() {
           transition={{ duration: 0.2 }}
         >
           <h2 className="font-display text-xl font-semibold text-foreground sm:text-2xl">
-            {currentQ.question_text}
+            <LatexRenderer text={currentQ.question_text} />
           </h2>
 
           <div className="mt-6 space-y-3">
@@ -211,7 +212,7 @@ export default function QuizAttemptPage() {
                 >
                   {opt.key}
                 </span>
-                <span className="pt-1 text-card-foreground">{opt.text}</span>
+                <span className="pt-1 text-card-foreground"><LatexRenderer text={opt.text} /></span>
               </button>
             ))}
           </div>

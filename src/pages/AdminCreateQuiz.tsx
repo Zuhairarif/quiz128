@@ -4,9 +4,11 @@ import { adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Upload, Loader2, Save, ArrowLeft, AlertCircle } from "lucide-react";
+import LatexRenderer from "@/components/LatexRenderer";
 
 type ExtractedQuestion = {
   question_text: string;
@@ -17,6 +19,26 @@ type ExtractedQuestion = {
   correct_option: string | null;
 };
 
+const CLASS_OPTIONS = [
+  { label: "Class 6", value: "6" },
+  { label: "Class 9", value: "9" },
+  { label: "Class 11", value: "11" },
+];
+
+const TEST_TYPES = [
+  { label: "Topic Wise Test", value: "topic_wise" },
+  { label: "Full Test", value: "full_test" },
+  { label: "PYQs", value: "pyqs" },
+];
+
+const SUBJECTS = [
+  { label: "Science", value: "science" },
+  { label: "Maths", value: "maths" },
+  { label: "English", value: "english" },
+  { label: "Hindi", value: "hindi" },
+  { label: "Indo-Islamic", value: "indo_islamic" },
+];
+
 export default function AdminCreateQuiz() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -24,10 +46,12 @@ export default function AdminCreateQuiz() {
   const [title, setTitle] = useState("");
   const [marksPerQ, setMarksPerQ] = useState(1);
   const [totalTime, setTotalTime] = useState(30);
+  const [classLevel, setClassLevel] = useState("");
+  const [testType, setTestType] = useState("");
+  const [subject, setSubject] = useState("");
   const [questions, setQuestions] = useState<ExtractedQuestion[]>([]);
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [hasAnswers, setHasAnswers] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,7 +59,6 @@ export default function AdminCreateQuiz() {
 
     setExtracting(true);
     try {
-      // Convert file to base64 for Gemini to read directly
       const arrayBuffer = await file.arrayBuffer();
       const base64 = btoa(
         new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
@@ -44,7 +67,6 @@ export default function AdminCreateQuiz() {
       const result = await adminApi.extractQuiz(base64, file.name);
       setTitle(result.title || file.name.replace(/\.(pdf|txt)$/i, ""));
       setQuestions(result.questions || []);
-      setHasAnswers(result.has_answers || false);
       toast.success(`Extracted ${result.questions?.length || 0} questions`);
 
       if (!result.has_answers) {
@@ -66,14 +88,11 @@ export default function AdminCreateQuiz() {
   const allAnswersSet = questions.every((q) => q.correct_option);
 
   const handleSave = async (status: "draft" | "published") => {
-    if (!title.trim()) {
-      toast.error("Please enter a quiz title");
-      return;
-    }
-    if (questions.length === 0) {
-      toast.error("No questions to save");
-      return;
-    }
+    if (!title.trim()) { toast.error("Please enter a quiz title"); return; }
+    if (!classLevel) { toast.error("Please select a class"); return; }
+    if (!testType) { toast.error("Please select a test type"); return; }
+    if (testType === "topic_wise" && !subject) { toast.error("Please select a subject"); return; }
+    if (questions.length === 0) { toast.error("No questions to save"); return; }
     if (status === "published" && !allAnswersSet) {
       toast.error("Set correct answers for all questions before publishing");
       return;
@@ -85,6 +104,9 @@ export default function AdminCreateQuiz() {
         title,
         marks_per_question: marksPerQ,
         total_time_minutes: totalTime,
+        class_level: classLevel,
+        test_type: testType,
+        subject: testType === "topic_wise" ? subject : null,
         questions,
         status,
       });
@@ -126,11 +148,46 @@ export default function AdminCreateQuiz() {
         </div>
 
         {/* Quiz Settings */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-3">
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">Quiz Title</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter quiz title" />
           </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Class</label>
+            <Select value={classLevel} onValueChange={setClassLevel}>
+              <SelectTrigger><SelectValue placeholder="Select Class" /></SelectTrigger>
+              <SelectContent>
+                {CLASS_OPTIONS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">Test Type</label>
+            <Select value={testType} onValueChange={(v) => { setTestType(v); if (v !== "topic_wise") setSubject(""); }}>
+              <SelectTrigger><SelectValue placeholder="Select Test Type" /></SelectTrigger>
+              <SelectContent>
+                {TEST_TYPES.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {testType === "topic_wise" && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Subject</label>
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                <SelectContent>
+                  {SUBJECTS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">Marks per Question</label>
             <Input type="number" min={1} value={marksPerQ} onChange={(e) => setMarksPerQ(Number(e.target.value))} />
@@ -169,6 +226,12 @@ export default function AdminCreateQuiz() {
                       {i + 1}
                     </span>
                     <span className="text-sm font-medium text-muted-foreground">Question</span>
+                    {/* Preview rendered LaTeX */}
+                    <span className="ml-auto text-xs text-muted-foreground">Preview:</span>
+                  </div>
+
+                  <div className="mb-2 rounded-lg bg-muted/50 p-3 text-sm">
+                    <LatexRenderer text={q.question_text} />
                   </div>
 
                   <Textarea
@@ -193,11 +256,15 @@ export default function AdminCreateQuiz() {
                           >
                             {opt}
                           </button>
-                          <Input
-                            value={q[field] as string}
-                            onChange={(e) => updateQuestion(i, field, e.target.value)}
-                            className="flex-1"
-                          />
+                          <div className="flex-1 space-y-1">
+                            <Input
+                              value={q[field] as string}
+                              onChange={(e) => updateQuestion(i, field, e.target.value)}
+                            />
+                            <div className="text-xs px-1">
+                              <LatexRenderer text={q[field] as string} />
+                            </div>
+                          </div>
                         </div>
                       );
                     })}

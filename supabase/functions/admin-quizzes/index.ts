@@ -76,11 +76,11 @@ serve(async (req) => {
 
     // CREATE quiz
     if (body?.action === "create") {
-      const { title, marks_per_question, total_time_minutes, questions, status } = body;
+      const { title, marks_per_question, total_time_minutes, questions, status, class_level, test_type, subject } = body;
 
       const { data: quiz, error: quizError } = await supabase
         .from("quizzes")
-        .insert({ title, marks_per_question, total_time_minutes, status: status || "draft" })
+        .insert({ title, marks_per_question, total_time_minutes, status: status || "draft", class_level: class_level || null, test_type: test_type || null, subject: subject || null })
         .select()
         .single();
 
@@ -109,11 +109,16 @@ serve(async (req) => {
 
     // UPDATE quiz
     if (body?.action === "update") {
-      const { id, title, marks_per_question, total_time_minutes, status, questions } = body;
+      const { id, title, marks_per_question, total_time_minutes, status, questions, class_level, test_type, subject } = body;
+
+      const updateData: Record<string, unknown> = { title, marks_per_question, total_time_minutes, status };
+      if (class_level !== undefined) updateData.class_level = class_level || null;
+      if (test_type !== undefined) updateData.test_type = test_type || null;
+      if (subject !== undefined) updateData.subject = subject || null;
 
       const { error: quizError } = await supabase
         .from("quizzes")
-        .update({ title, marks_per_question, total_time_minutes, status })
+        .update(updateData)
         .eq("id", id);
 
       if (quizError) throw quizError;
