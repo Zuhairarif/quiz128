@@ -7,6 +7,7 @@ import { Search, BookOpen, GraduationCap, FlaskConical, Calculator, Languages, B
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import bismillahImg from "@/assets/bismillah.webp";
+import ssnLogo from "@/assets/ssn-logo.png";
 
 const CLASSES = [
   { label: "Class 6", value: "6", icon: BookOpen },
@@ -36,6 +37,7 @@ type Quiz = {
   class_level: string | null;
   test_type: string | null;
   subject: string | null;
+  attempts_closed: boolean;
   questions: { count: number }[];
 };
 
@@ -55,7 +57,7 @@ export default function HomePage() {
   useEffect(() => {
     supabase
       .from("quizzes")
-      .select("id, title, marks_per_question, total_time_minutes, class_level, test_type, subject, questions(count)")
+      .select("id, title, marks_per_question, total_time_minutes, class_level, test_type, subject, attempts_closed, questions(count)")
       .eq("status", "published")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
@@ -70,8 +72,8 @@ export default function HomePage() {
     else if (nav.classLevel) setNav({});
   };
 
-  // Filter quizzes based on navigation
   const filteredQuizzes = quizzes.filter((q) => {
+    if (q.attempts_closed) return false;
     if (nav.classLevel && q.class_level !== nav.classLevel) return false;
     if (nav.testType && q.test_type !== nav.testType) return false;
     if (nav.subject && q.subject !== nav.subject) return false;
@@ -90,34 +92,39 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-gradient-to-b from-[hsl(170,40%,20%)] to-[hsl(170,35%,28%)] px-4 pb-10 pt-6 text-center relative">
+      <header className="gradient-hero px-4 pb-6 pt-4 text-center relative">
+        <img
+          src={ssnLogo}
+          alt="SSN Logo"
+          className="absolute top-3 left-3 h-10 w-10 rounded-full object-contain"
+        />
         <Link
           to="/admin/login"
-          className="absolute top-3 right-3 text-[hsl(0,0%,100%)]/40 hover:text-[hsl(0,0%,100%)]/70 text-xs transition-colors"
+          className="absolute top-3 right-3 text-primary-foreground/30 hover:text-primary-foreground/60 text-xs transition-colors"
         >
           Admin
         </Link>
 
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-2xl">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-2xl">
           <img
             src={bismillahImg}
             alt="Bismillah"
-            className="mx-auto mb-3 h-12 object-contain opacity-90"
+            className="mx-auto mb-2 h-10 object-contain opacity-90"
           />
-          <h1 className="font-display text-3xl font-bold text-[hsl(0,0%,100%)] sm:text-4xl tracking-tight">
+          <h1 className="font-display text-2xl font-bold text-primary-foreground sm:text-3xl tracking-tight">
             Student Support Network
           </h1>
-          <p className="mt-1 text-sm font-medium text-[hsl(45,60%,70%)]">SSN</p>
-          <p className="mt-2 text-sm text-[hsl(0,0%,100%)]/70 italic max-w-md mx-auto">
+          <p className="text-sm font-medium text-accent">SSN</p>
+          <p className="mt-1 text-xs text-primary-foreground/60 italic max-w-sm mx-auto">
             "An initiative for the education and awareness of educationally backward people"
           </p>
         </motion.div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 pb-16 -mt-5">
+      <main className="mx-auto max-w-4xl px-4 pb-16 pt-8">
         {/* Back button & breadcrumb */}
         {nav.classLevel && (
-          <div className="mb-4 flex items-center gap-2">
+          <div className="mb-6 flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={goBack} className="shrink-0">
               <ChevronLeft className="h-4 w-4 mr-1" /> Back
             </Button>
@@ -127,9 +134,9 @@ export default function HomePage() {
 
         {/* STEP 1: Class selection */}
         {!nav.classLevel && (
-          <div className="mt-2">
-            <h2 className="mb-4 font-display text-xl font-semibold text-foreground text-center">Choose Your Class</h2>
-            <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <h2 className="mb-6 font-display text-xl font-semibold text-foreground text-center">Choose Your Class</h2>
+            <div className="grid gap-5 sm:grid-cols-3 max-w-2xl mx-auto">
               {CLASSES.map((cls, i) => (
                 <motion.div
                   key={cls.value}
@@ -152,11 +159,11 @@ export default function HomePage() {
 
         {/* STEP 2: Test type selection */}
         {nav.classLevel && !nav.testType && (
-          <div className="mt-2">
-            <h2 className="mb-4 font-display text-xl font-semibold text-foreground text-center">
+          <div>
+            <h2 className="mb-6 font-display text-xl font-semibold text-foreground text-center">
               Class {nav.classLevel} — Select Test Type
             </h2>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-3 max-w-2xl mx-auto">
               {TEST_TYPES.map((tt, i) => (
                 <motion.div
                   key={tt.value}
@@ -180,11 +187,11 @@ export default function HomePage() {
 
         {/* STEP 3: Subject selection (only for topic_wise) */}
         {nav.classLevel && nav.testType === "topic_wise" && !nav.subject && (
-          <div className="mt-2">
-            <h2 className="mb-4 font-display text-xl font-semibold text-foreground text-center">
+          <div>
+            <h2 className="mb-6 font-display text-xl font-semibold text-foreground text-center">
               Select Subject
             </h2>
-            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5 max-w-3xl mx-auto">
               {SUBJECTS.map((sub, i) => (
                 <motion.div
                   key={sub.value}
@@ -207,8 +214,7 @@ export default function HomePage() {
 
         {/* STEP 4: Quiz list */}
         {showQuizList && (
-          <div className="mt-2">
-            {/* Search */}
+          <div>
             <div className="mb-6">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

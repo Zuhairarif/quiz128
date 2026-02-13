@@ -36,8 +36,6 @@ serve(async (req) => {
   }
 
   const supabase = getSupabase();
-  const url = new URL(req.url);
-  const path = url.pathname.split("/").pop();
 
   try {
     const body = req.method !== "GET" ? await req.json() : null;
@@ -51,7 +49,6 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      // Get attempt counts
       const quizIds = (data || []).map((q: any) => q.id);
       const { data: attempts } = await supabase
         .from("quiz_attempts")
@@ -109,12 +106,17 @@ serve(async (req) => {
 
     // UPDATE quiz
     if (body?.action === "update") {
-      const { id, title, marks_per_question, total_time_minutes, status, questions, class_level, test_type, subject } = body;
+      const { id, title, marks_per_question, total_time_minutes, status, questions, class_level, test_type, subject, attempts_closed } = body;
 
-      const updateData: Record<string, unknown> = { title, marks_per_question, total_time_minutes, status };
+      const updateData: Record<string, unknown> = {};
+      if (title !== undefined) updateData.title = title;
+      if (marks_per_question !== undefined) updateData.marks_per_question = marks_per_question;
+      if (total_time_minutes !== undefined) updateData.total_time_minutes = total_time_minutes;
+      if (status !== undefined) updateData.status = status;
       if (class_level !== undefined) updateData.class_level = class_level || null;
       if (test_type !== undefined) updateData.test_type = test_type || null;
       if (subject !== undefined) updateData.subject = subject || null;
+      if (attempts_closed !== undefined) updateData.attempts_closed = attempts_closed;
 
       const { error: quizError } = await supabase
         .from("quizzes")
@@ -124,7 +126,6 @@ serve(async (req) => {
       if (quizError) throw quizError;
 
       if (questions) {
-        // Delete old questions and insert new
         await supabase.from("questions").delete().eq("quiz_id", id);
 
         const questionsToInsert = questions.map((q: any, i: number) => ({
@@ -178,11 +179,18 @@ serve(async (req) => {
         .from("quiz_attempts")
         .select("*")
         .eq("quiz_id", body.quiz_id)
-        .order("submitted_at", { ascending: false });
+        .order("score", { ascending: false })
+        .order("time_taken_seconds", { ascending: true });
 
       if (error) throw error;
 
-      return new Response(JSON.stringify({ attempts }), {
+      // Add ranks
+      const rankedAttempts = (attempts || []).map((a: any, i: number) => ({
+        ...a,
+        rank: i + 1,
+      }));
+
+      return new Response(JSON.stringify({ attempts: rankedAttempts }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

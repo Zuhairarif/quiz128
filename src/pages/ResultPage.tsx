@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Home, Trophy } from "lucide-react";
+import { CheckCircle2, XCircle, Home, Trophy, Medal } from "lucide-react";
 import LatexRenderer from "@/components/LatexRenderer";
 
 type Detail = {
@@ -15,6 +15,13 @@ type Detail = {
   is_correct: boolean;
 };
 
+type LeaderboardEntry = {
+  user_name: string;
+  score: number;
+  total_marks: number;
+  rank: number;
+};
+
 type Result = {
   user_name: string;
   quiz_title: string;
@@ -24,6 +31,8 @@ type Result = {
   wrong_count: number;
   time_taken_seconds: number;
   details: Detail[];
+  leaderboard?: LeaderboardEntry[];
+  user_rank?: number;
 };
 
 function getOptionText(detail: Detail, key: string) {
@@ -57,29 +66,34 @@ export default function ResultPage() {
   return (
     <div className="min-h-screen bg-background pb-16">
       {/* Score header */}
-      <div className="gradient-hero px-4 pb-12 pt-10">
+      <div className="gradient-hero px-4 pb-10 pt-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mx-auto max-w-2xl text-center"
         >
-          <Trophy className="mx-auto mb-3 h-12 w-12 text-primary-foreground/80" />
-          <h1 className="font-display text-3xl font-bold text-primary-foreground">
+          <Trophy className="mx-auto mb-3 h-10 w-10 text-primary-foreground/80" />
+          <h1 className="font-display text-2xl font-bold text-primary-foreground sm:text-3xl">
             Quiz Complete!
           </h1>
           <p className="mt-1 text-primary-foreground/70">{result.quiz_title}</p>
           <p className="mt-1 text-sm text-primary-foreground/60">by {result.user_name}</p>
 
-          <div className="mt-6 inline-flex items-baseline gap-1">
-            <span className="font-display text-6xl font-bold text-primary-foreground">{result.score}</span>
-            <span className="text-2xl text-primary-foreground/60">/{result.total_marks}</span>
+          <div className="mt-4 inline-flex items-baseline gap-1">
+            <span className="font-display text-5xl font-bold text-primary-foreground">{result.score}</span>
+            <span className="text-xl text-primary-foreground/60">/{result.total_marks}</span>
           </div>
           <p className="mt-1 text-lg text-primary-foreground/70">{percentage}%</p>
+          {result.user_rank && (
+            <p className="mt-2 text-sm font-medium text-accent">
+              🏆 Your Rank: #{result.user_rank}
+            </p>
+          )}
         </motion.div>
       </div>
 
       {/* Stats */}
-      <div className="mx-auto -mt-6 max-w-2xl px-4">
+      <div className="mx-auto -mt-5 max-w-2xl px-4">
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl border border-border bg-card p-4 text-center shadow-sm">
             <p className="text-2xl font-bold text-accent">{result.correct_count}</p>
@@ -95,6 +109,42 @@ export default function ResultPage() {
           </div>
         </div>
       </div>
+
+      {/* Leaderboard */}
+      {result.leaderboard && result.leaderboard.length > 0 && (
+        <div className="mx-auto mt-8 max-w-2xl px-4">
+          <h2 className="mb-4 font-display text-xl font-semibold text-foreground flex items-center gap-2">
+            <Medal className="h-5 w-5 text-accent" /> Leaderboard
+          </h2>
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            {result.leaderboard.map((entry, i) => (
+              <div
+                key={i}
+                className={`flex items-center justify-between px-4 py-3 ${
+                  i !== result.leaderboard!.length - 1 ? "border-b border-border" : ""
+                } ${entry.user_name === result.user_name ? "bg-primary/5" : ""}`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                    entry.rank === 1 ? "bg-accent text-accent-foreground" :
+                    entry.rank === 2 ? "bg-muted text-foreground" :
+                    entry.rank === 3 ? "bg-accent/30 text-accent-foreground" :
+                    "bg-muted text-muted-foreground"
+                  }`}>
+                    {entry.rank}
+                  </span>
+                  <span className={`text-sm font-medium ${entry.user_name === result.user_name ? "text-primary font-semibold" : "text-card-foreground"}`}>
+                    {entry.user_name}
+                  </span>
+                </div>
+                <span className="text-sm font-semibold text-card-foreground">
+                  {entry.score}/{entry.total_marks}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Detailed results */}
       <div className="mx-auto mt-8 max-w-2xl px-4">
@@ -125,14 +175,14 @@ export default function ResultPage() {
                 <p>
                   <span className="text-muted-foreground">Your answer: </span>
                   <span className={d.is_correct ? "font-medium text-accent" : "font-medium text-destructive"}>
-                    {d.selected_option ? `${d.selected_option}) ${getOptionText(d, d.selected_option)}` : "Not answered"}
+                    {d.selected_option ? <><span>{d.selected_option}) </span><LatexRenderer text={getOptionText(d, d.selected_option)} /></> : "Not answered"}
                   </span>
                 </p>
                 {!d.is_correct && (
                   <p>
                     <span className="text-muted-foreground">Correct answer: </span>
                     <span className="font-medium text-accent">
-                      {d.correct_option}) {getOptionText(d, d.correct_option)}
+                      {d.correct_option}) <LatexRenderer text={getOptionText(d, d.correct_option)} />
                     </span>
                   </p>
                 )}

@@ -4,17 +4,20 @@ import { adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, Eye, Users, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Eye, Users, Clock, CheckCircle2, XCircle, Medal, MapPin, Phone } from "lucide-react";
 
 type Attempt = {
   id: string;
   user_name: string;
+  user_address: string | null;
+  user_phone: string | null;
   score: number;
   total_marks: number;
   correct_count: number;
   wrong_count: number;
   time_taken_seconds: number | null;
   submitted_at: string;
+  rank: number;
 };
 
 type AnswerDetail = {
@@ -96,7 +99,7 @@ export default function AdminQuizAttempts() {
       </header>
 
       <main className="mx-auto max-w-4xl p-4 py-8">
-        {/* Attempt detail modal/section */}
+        {/* Attempt detail */}
         {selectedAttempt && details && !detailLoading && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -111,6 +114,17 @@ export default function AdminQuizAttempts() {
                 Close
               </Button>
             </div>
+
+            {(details.attempt.user_address || details.attempt.user_phone) && (
+              <div className="mb-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
+                {details.attempt.user_address && (
+                  <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {details.attempt.user_address}</span>
+                )}
+                {details.attempt.user_phone && (
+                  <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {details.attempt.user_phone}</span>
+                )}
+              </div>
+            )}
 
             <div className="mb-4 grid grid-cols-3 gap-3">
               <div className="rounded-lg bg-muted p-3 text-center">
@@ -161,7 +175,7 @@ export default function AdminQuizAttempts() {
           </motion.div>
         )}
 
-        {/* Attempts list */}
+        {/* Attempts list with ranks */}
         {attempts.length === 0 ? (
           <div className="py-16 text-center">
             <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
@@ -177,17 +191,26 @@ export default function AdminQuizAttempts() {
                 transition={{ delay: i * 0.03 }}
                 className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div>
-                  <p className="font-medium text-card-foreground">{a.user_name}</p>
-                  <div className="mt-1 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                    <span>{a.score}/{a.total_marks} marks</span>
-                    <span className="text-accent">{a.correct_count} correct</span>
-                    <span className="text-destructive">{a.wrong_count} wrong</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatTime(a.time_taken_seconds)}
-                    </span>
-                    <span>{new Date(a.submitted_at).toLocaleString()}</span>
+                <div className="flex items-center gap-3">
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
+                    a.rank === 1 ? "bg-accent text-accent-foreground" :
+                    a.rank === 2 ? "bg-muted text-foreground" :
+                    a.rank === 3 ? "bg-accent/30 text-accent-foreground" :
+                    "bg-muted text-muted-foreground"
+                  }`}>
+                    {a.rank}
+                  </span>
+                  <div>
+                    <p className="font-medium text-card-foreground">{a.user_name}</p>
+                    <div className="mt-1 flex flex-wrap gap-3 text-sm text-muted-foreground">
+                      <span>{a.score}/{a.total_marks} marks</span>
+                      <span className="text-accent">{a.correct_count} correct</span>
+                      <span className="text-destructive">{a.wrong_count} wrong</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatTime(a.time_taken_seconds)}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => viewDetail(a.id)}>

@@ -70,7 +70,9 @@ export type Database = {
           submitted_at: string
           time_taken_seconds: number | null
           total_marks: number
+          user_address: string | null
           user_name: string
+          user_phone: string | null
           wrong_count: number
         }
         Insert: {
@@ -81,7 +83,9 @@ export type Database = {
           submitted_at?: string
           time_taken_seconds?: number | null
           total_marks?: number
+          user_address?: string | null
           user_name: string
+          user_phone?: string | null
           wrong_count?: number
         }
         Update: {
@@ -92,7 +96,9 @@ export type Database = {
           submitted_at?: string
           time_taken_seconds?: number | null
           total_marks?: number
+          user_address?: string | null
           user_name?: string
+          user_phone?: string | null
           wrong_count?: number
         }
         Relationships: [
@@ -107,6 +113,7 @@ export type Database = {
       }
       quizzes: {
         Row: {
+          attempts_closed: boolean
           class_level: string | null
           created_at: string
           id: string
@@ -119,6 +126,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attempts_closed?: boolean
           class_level?: string | null
           created_at?: string
           id?: string
@@ -131,6 +139,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attempts_closed?: boolean
           class_level?: string | null
           created_at?: string
           id?: string
