@@ -7,7 +7,7 @@ import { Search, BookOpen, GraduationCap, FlaskConical, Calculator, Languages, B
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import bismillahImg from "@/assets/bismillah.webp";
-import ssnLogo from "@/assets/ssn-logo.png";
+import ssnLogo from "@/assets/ssn-logo.jpeg";
 
 const CLASSES = [
   { label: "Class 6", value: "6", icon: BookOpen },
