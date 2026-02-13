@@ -97,15 +97,17 @@ export default function HomePage() {
   src={ssnLogo}
   alt="SSN Logo"
   className="
-    absolute top-4 left-4
-    h-24 w-24
-    sm:h-32 sm:w-32
-    object-cover
+    absolute
+    top-2 left-2
+    h-16 w-16
     rounded-full
-    bg-white/90
-    p-1
+    object-cover
+
+    sm:top-4 sm:left-4
+    sm:h-32 sm:w-32
   "
 />
+
 
 
 
