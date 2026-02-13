@@ -93,11 +93,12 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="gradient-hero px-4 pb-6 pt-4 text-center relative">
-        <img
-          src={ssnLogo}
-          alt="SSN Logo"
-          className="absolute top-3 left-3 h-15 w-15 rounded-full object-contain"
-        />
+       <img
+  src={ssnLogo}
+  alt="SSN Logo"
+  className="absolute top-3 left-3 h-10 w-10 rounded-full bg-white/90 p-1 shadow-sm object-contain"
+/>
+
         <Link
           to="/admin/login"
           className="absolute top-3 right-3 text-primary-foreground/30 hover:text-primary-foreground/60 text-xs transition-colors"
