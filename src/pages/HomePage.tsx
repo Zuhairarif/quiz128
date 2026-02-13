@@ -98,13 +98,14 @@ export default function HomePage() {
   alt="SSN Logo"
   className="
     absolute top-4 left-4
-    h-20 w-20
+    h-16 w-16
     rounded-full
     object-cover
 
     sm:h-32 sm:w-32
   "
 />
+
 
 
 
