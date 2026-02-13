@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { quiz_id, user_name, answers, time_taken_seconds } = await req.json();
+    const { quiz_id, user_name, user_address, user_phone, answers, time_taken_seconds } = await req.json();
 
     if (!quiz_id || !user_name || !answers) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -35,6 +35,14 @@ serve(async (req) => {
     if (quizError || !quiz) {
       return new Response(JSON.stringify({ error: "Quiz not found or not published" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if attempts are closed
+    if (quiz.attempts_closed) {
+      return new Response(JSON.stringify({ error: "Attempts are closed for this quiz" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -67,6 +75,8 @@ serve(async (req) => {
       .insert({
         quiz_id,
         user_name,
+        user_address: user_address || null,
+        user_phone: user_phone || null,
         score,
         total_marks: totalMarks,
         correct_count: correctCount,
@@ -87,6 +97,21 @@ serve(async (req) => {
     const { error: ansError } = await supabase.from("user_answers").insert(answersToInsert);
     if (ansError) throw ansError;
 
+    // Get leaderboard - all attempts for this quiz sorted by score desc
+    const { data: allAttempts } = await supabase
+      .from("quiz_attempts")
+      .select("user_name, score, total_marks")
+      .eq("quiz_id", quiz_id)
+      .order("score", { ascending: false })
+      .order("time_taken_seconds", { ascending: true });
+
+    const leaderboard = (allAttempts || []).map((a: any, i: number) => ({
+      ...a,
+      rank: i + 1,
+    }));
+
+    const userRank = leaderboard.findIndex((l: any) => l.user_name === user_name && l.score === score) + 1;
+
     // Return result with question details
     const result = {
       attempt_id: attempt.id,
@@ -97,6 +122,8 @@ serve(async (req) => {
       correct_count: correctCount,
       wrong_count: wrongCount,
       time_taken_seconds,
+      leaderboard: leaderboard.slice(0, 20),
+      user_rank: userRank || null,
       details: questions.map((q: any) => {
         const ua = userAnswers.find((a: any) => a.question_id === q.id);
         return {

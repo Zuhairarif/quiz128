@@ -5,7 +5,7 @@ import { adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard, Plus, FileText, Users, LogOut, Trash2, Eye, Pencil, Globe, GlobeLock,
+  LayoutDashboard, Plus, FileText, Users, LogOut, Trash2, Eye, Pencil, Globe, GlobeLock, Lock, Unlock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +15,7 @@ type Quiz = {
   status: string;
   question_count: number;
   attempt_count: number;
+  attempts_closed: boolean;
   created_at: string;
 };
 
@@ -68,9 +69,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleToggleAttempts = async (quiz: Quiz) => {
+    try {
+      await adminApi.quizAction("update", {
+        id: quiz.id,
+        attempts_closed: !quiz.attempts_closed,
+      });
+      toast.success(quiz.attempts_closed ? "Attempts opened" : "Attempts closed");
+      loadData();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card px-4 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
@@ -90,7 +103,7 @@ export default function AdminDashboard() {
 
       <main className="mx-auto max-w-6xl p-4 py-8">
         {/* Stats */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-2">
+        <div className="mb-8 grid grid-cols-2 gap-4">
           <div className="rounded-xl border border-border bg-card p-6">
             <p className="text-sm text-muted-foreground">Total Quizzes</p>
             <p className="mt-1 font-display text-3xl font-bold text-card-foreground">{stats.quiz_count}</p>
@@ -132,7 +145,7 @@ export default function AdminDashboard() {
                 className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-medium text-card-foreground truncate">{quiz.title}</h3>
                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
                       quiz.status === "published"
@@ -141,17 +154,29 @@ export default function AdminDashboard() {
                     }`}>
                       {quiz.status}
                     </span>
+                    {quiz.attempts_closed && (
+                      <span className="shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+                        Closed
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {quiz.question_count} questions · {quiz.attempt_count} attempts
                   </p>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 gap-2 flex-wrap">
                   <Button variant="outline" size="sm" onClick={() => navigate(`/admin/quiz/${quiz.id}/attempts`)}>
                     <Users className="mr-1 h-3.5 w-3.5" /> Attempts
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => navigate(`/admin/edit/${quiz.id}`)}>
                     <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleToggleAttempts(quiz)}>
+                    {quiz.attempts_closed ? (
+                      <><Unlock className="mr-1 h-3.5 w-3.5" /> Open</>
+                    ) : (
+                      <><Lock className="mr-1 h-3.5 w-3.5" /> Close</>
+                    )}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => handleTogglePublish(quiz)}>
                     {quiz.status === "published" ? (

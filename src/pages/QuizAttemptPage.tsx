@@ -6,7 +6,8 @@ import { adminApi } from "@/lib/api";
 import Timer, { useElapsedTime } from "@/components/Timer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, ChevronRight, Send, User } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ChevronLeft, ChevronRight, Send, User, MapPin, Phone } from "lucide-react";
 import { toast } from "sonner";
 import LatexRenderer from "@/components/LatexRenderer";
 
@@ -25,6 +26,7 @@ type Quiz = {
   title: string;
   total_time_minutes: number;
   marks_per_question: number;
+  attempts_closed: boolean;
 };
 
 export default function QuizAttemptPage() {
@@ -35,8 +37,11 @@ export default function QuizAttemptPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Quiz state
+  // User info
   const [userName, setUserName] = useState("");
+  const [userAddress, setUserAddress] = useState("");
+  const [userPhone, setUserPhone] = useState("");
+
   const [started, setStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -60,13 +65,13 @@ export default function QuizAttemptPage() {
     if (submitted || submitting || !quiz) return;
     setSubmitting(true);
     try {
-      const result = await adminApi.submitQuiz(quiz.id, userName, answers, getElapsed());
+      const result = await adminApi.submitQuiz(quiz.id, userName, answers, getElapsed(), userAddress, userPhone);
       navigate(`/result`, { state: { result }, replace: true });
     } catch (e: any) {
       toast.error(e.message || "Failed to submit quiz");
       setSubmitting(false);
     }
-  }, [quiz, userName, answers, getElapsed, navigate, submitted, submitting]);
+  }, [quiz, userName, userAddress, userPhone, answers, getElapsed, navigate, submitted, submitting]);
 
   const handleTimeExpire = useCallback(() => {
     if (!submitted) {
@@ -75,7 +80,6 @@ export default function QuizAttemptPage() {
     }
   }, [handleSubmit, submitted]);
 
-  // Prevent page refresh during quiz
   useEffect(() => {
     if (!started || submitted) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -105,8 +109,20 @@ export default function QuizAttemptPage() {
     );
   }
 
+  if (quiz.attempts_closed) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+        <p className="text-lg font-medium text-destructive">Attempts are closed for this quiz.</p>
+        <Button variant="outline" className="mt-4" onClick={() => navigate("/")}>
+          Go Home
+        </Button>
+      </div>
+    );
+  }
+
   // Name entry screen
   if (!started) {
+    const canStart = userName.trim() && userAddress.trim() && userPhone.trim().length >= 10;
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <motion.div
@@ -120,16 +136,42 @@ export default function QuizAttemptPage() {
           </p>
           <div className="mt-6 space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-medium text-card-foreground">Your Name</label>
+              <label className="mb-2 block text-sm font-medium text-card-foreground">Full Name</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Enter your name"
+                  placeholder="Enter your full name"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   className="pl-10"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-card-foreground">Address</label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Textarea
+                  placeholder="Enter your address"
+                  value={userAddress}
+                  onChange={(e) => setUserAddress(e.target.value)}
+                  className="pl-10 min-h-[60px]"
+                  rows={2}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-card-foreground">Phone Number</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Enter your phone number"
+                  value={userPhone}
+                  onChange={(e) => setUserPhone(e.target.value)}
+                  className="pl-10"
+                  type="tel"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && userName.trim()) setStarted(true);
+                    if (e.key === "Enter" && canStart) setStarted(true);
                   }}
                 />
               </div>
@@ -137,7 +179,7 @@ export default function QuizAttemptPage() {
             <Button
               className="w-full"
               size="lg"
-              disabled={!userName.trim()}
+              disabled={!canStart}
               onClick={() => setStarted(true)}
             >
               Start Quiz
@@ -169,7 +211,6 @@ export default function QuizAttemptPage() {
             onExpire={handleTimeExpire}
           />
         </div>
-        {/* Progress bar */}
         <div className="mx-auto mt-2 max-w-3xl">
           <div className="h-1.5 rounded-full bg-muted">
             <div
