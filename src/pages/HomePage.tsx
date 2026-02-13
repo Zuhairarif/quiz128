@@ -96,7 +96,7 @@ export default function HomePage() {
         <img
           src={ssnLogo}
           alt="SSN Logo"
-          className="absolute top-3 left-3 h-25 w-25 rounded-full object-contain"
+          className="absolute top-3 left-3 h-15 w-15 rounded-full object-contain"
         />
         <Link
           to="/admin/login"
