@@ -49,14 +49,13 @@ export function StudentProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (existing) {
-      // Update name/address if provided and different
-      if (name && name !== existing.full_name) {
-        await supabase
-          .from("student_profiles")
-          .update({ full_name: name, address: address || existing.address })
-          .eq("id", existing.id);
-        existing.full_name = name;
-        if (address) existing.address = address;
+      // Update name/address only if provided
+      const updates: Record<string, string> = {};
+      if (name && name !== existing.full_name) updates.full_name = name;
+      if (address && address !== existing.address) updates.address = address;
+      if (Object.keys(updates).length > 0) {
+        await supabase.from("student_profiles").update(updates).eq("id", existing.id);
+        Object.assign(existing, updates);
       }
       const profile = existing as StudentProfile;
       setStudent(profile);

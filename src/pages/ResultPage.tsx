@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Home, Trophy, Medal } from "lucide-react";
 import LatexRenderer from "@/components/LatexRenderer";
+import { cleanQuestionText } from "@/lib/cleanQuestionText";
 
 type Detail = {
   question_text: string;
@@ -163,7 +164,7 @@ export default function ResultPage() {
               <div className="flex items-start justify-between gap-3">
                 <p className="font-medium text-foreground">
                   <span className="text-muted-foreground">Q{i + 1}. </span>
-                  <LatexRenderer text={d.question_text} />
+                  <LatexRenderer text={cleanQuestionText(d.question_text)} />
                 </p>
                 {d.is_correct ? (
                   <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" />

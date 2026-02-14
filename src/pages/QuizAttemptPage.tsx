@@ -6,12 +6,12 @@ import { adminApi } from "@/lib/api";
 import Timer, { useElapsedTime } from "@/components/Timer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, Send, User, MapPin, Phone } from "lucide-react";
+import { ChevronLeft, ChevronRight, Send, Phone } from "lucide-react";
 import { toast } from "sonner";
 import LatexRenderer from "@/components/LatexRenderer";
 import { useStudent } from "@/hooks/useStudent";
 import PhoneLoginDialog from "@/components/PhoneLoginDialog";
+import { cleanQuestionText } from "@/lib/cleanQuestionText";
 
 type Question = {
   id: string;
@@ -40,9 +40,7 @@ export default function QuizAttemptPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // User info (used if not logged in)
-  const [userName, setUserName] = useState("");
-  const [userAddress, setUserAddress] = useState("");
+  // User info
   const [userPhone, setUserPhone] = useState("");
   const [showPhoneLogin, setShowPhoneLogin] = useState(false);
 
@@ -56,8 +54,6 @@ export default function QuizAttemptPage() {
   // Pre-fill from student profile
   useEffect(() => {
     if (student) {
-      setUserName(student.full_name || "");
-      setUserAddress(student.address || "");
       setUserPhone(student.phone_number || "");
     }
   }, [student]);
@@ -78,21 +74,23 @@ export default function QuizAttemptPage() {
     if (submitted || submitting || !quiz) return;
     setSubmitting(true);
     try {
-      // If logged in, ensure profile is linked
-      const profileId = student?.id || undefined;
-      // Also login/create profile if phone was entered manually
-      if (!profileId && userPhone.trim().length >= 10) {
+      // Ensure student profile exists
+      let profileId = student?.id;
+      const phone = userPhone.replace(/\D/g, "").slice(-10);
+      if (!profileId && phone.length >= 10) {
         try {
-          await loginWithPhone(userPhone.replace(/\D/g, "").slice(-10), userName, userAddress);
+          const profile = await loginWithPhone(phone);
+          profileId = profile.id;
         } catch { /* non-critical */ }
       }
-      const result = await adminApi.submitQuiz(quiz.id, userName, answers, getElapsed(), userAddress, userPhone, student?.id);
+      const displayName = student?.full_name || phone || "Student";
+      const result = await adminApi.submitQuiz(quiz.id, displayName, answers, getElapsed(), student?.address || undefined, phone, profileId);
       navigate(`/result`, { state: { result }, replace: true });
     } catch (e: any) {
       toast.error(e.message || "Failed to submit quiz");
       setSubmitting(false);
     }
-  }, [quiz, userName, userAddress, userPhone, answers, getElapsed, navigate, submitted, submitting, student, loginWithPhone]);
+  }, [quiz, userPhone, answers, getElapsed, navigate, submitted, submitting, student, loginWithPhone]);
 
   const handleTimeExpire = useCallback(() => {
     if (!submitted) {
@@ -141,9 +139,24 @@ export default function QuizAttemptPage() {
     );
   }
 
-  // Name entry screen
+  // Phone entry screen
   if (!started) {
-    const canStart = userName.trim() && userAddress.trim() && userPhone.trim().length >= 10;
+    const canStart = isLoggedIn || userPhone.replace(/\D/g, "").length >= 10;
+
+    const handleStartQuiz = async () => {
+      if (!canStart) return;
+      if (!isLoggedIn) {
+        try {
+          const cleanPhone = userPhone.replace(/\D/g, "").slice(-10);
+          await loginWithPhone(cleanPhone);
+        } catch (e: any) {
+          toast.error(e.message || "Failed to save phone number");
+          return;
+        }
+      }
+      setStarted(true);
+    };
+
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <motion.div
@@ -156,52 +169,35 @@ export default function QuizAttemptPage() {
             {questions.length} questions · {questions.length * quiz.marks_per_question} marks · {quiz.total_time_minutes} min
           </p>
           <div className="mt-6 space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-card-foreground">Full Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Enter your full name"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  className="pl-10"
-                />
+            {isLoggedIn ? (
+              <p className="text-sm text-muted-foreground">
+                Logged in as <span className="font-medium text-foreground">{student?.phone_number}</span>
+              </p>
+            ) : (
+              <div>
+                <label className="mb-2 block text-sm font-medium text-card-foreground">Phone Number</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="10-digit phone number"
+                    value={userPhone}
+                    onChange={(e) => setUserPhone(e.target.value)}
+                    className="pl-10"
+                    type="tel"
+                    maxLength={15}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && canStart) handleStartQuiz();
+                    }}
+                  />
+                </div>
+                <p className="mt-1.5 text-xs text-muted-foreground">Your quiz history will be saved with this number</p>
               </div>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-card-foreground">Address</label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Textarea
-                  placeholder="Enter your address"
-                  value={userAddress}
-                  onChange={(e) => setUserAddress(e.target.value)}
-                  className="pl-10 min-h-[60px]"
-                  rows={2}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-card-foreground">Phone Number</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Enter your phone number"
-                  value={userPhone}
-                  onChange={(e) => setUserPhone(e.target.value)}
-                  className="pl-10"
-                  type="tel"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && canStart) setStarted(true);
-                  }}
-                />
-              </div>
-            </div>
+            )}
             <Button
               className="w-full"
               size="lg"
               disabled={!canStart}
-              onClick={() => setStarted(true)}
+              onClick={handleStartQuiz}
             >
               Start Quiz
             </Button>
@@ -251,7 +247,7 @@ export default function QuizAttemptPage() {
           transition={{ duration: 0.2 }}
         >
           <h2 className="font-display text-xl font-semibold text-foreground sm:text-2xl">
-            <LatexRenderer text={currentQ.question_text} />
+            <LatexRenderer text={cleanQuestionText(currentQ.question_text)} />
           </h2>
 
           <div className="mt-6 space-y-3">
@@ -274,7 +270,7 @@ export default function QuizAttemptPage() {
                 >
                   {opt.key}
                 </span>
-                <span className="pt-1 text-card-foreground"><LatexRenderer text={opt.text} /></span>
+                <span className="pt-1 text-card-foreground"><LatexRenderer text={cleanQuestionText(opt.text)} /></span>
               </button>
             ))}
           </div>
