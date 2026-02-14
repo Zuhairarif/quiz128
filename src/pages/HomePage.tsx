@@ -3,11 +3,13 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import QuizCard from "@/components/QuizCard";
-import { Search, BookOpen, GraduationCap, FlaskConical, Calculator, Languages, BookText, Landmark, ChevronLeft, FileText, ClipboardList, ScrollText } from "lucide-react";
+import { Search, BookOpen, GraduationCap, FlaskConical, Calculator, Languages, BookText, Landmark, ChevronLeft, FileText, ClipboardList, ScrollText, Phone, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import bismillahImg from "@/assets/bismillah.webp";
 import ssnLogo from "@/assets/ssn-logo.jpeg";
+import { useStudent } from "@/hooks/useStudent";
+import PhoneLoginDialog from "@/components/PhoneLoginDialog";
 
 const CLASSES = [
   { label: "Class 6", value: "6", icon: BookOpen },
@@ -52,7 +54,9 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [nav, setNav] = useState<NavState>({});
+  const [showLogin, setShowLogin] = useState(false);
   const navigate = useNavigate();
+  const { student, isLoggedIn, logout } = useStudent();
 
   useEffect(() => {
     supabase
@@ -114,12 +118,28 @@ export default function HomePage() {
 
 
 
-        <Link
-          to="/admin/login"
-          className="absolute top-3 right-3 text-primary-foreground/30 hover:text-primary-foreground/60 text-xs transition-colors"
-        >
-          Admin
-        </Link>
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          {isLoggedIn ? (
+            <>
+              <Button variant="ghost" size="sm" className="text-primary-foreground/60 hover:text-primary-foreground text-xs h-7 px-2" onClick={() => navigate("/my-history")}>
+                <History className="h-3 w-3 mr-1" /> My History
+              </Button>
+              <Button variant="ghost" size="sm" className="text-primary-foreground/30 hover:text-primary-foreground/60 text-xs h-7 px-2" onClick={logout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <Button variant="ghost" size="sm" className="text-primary-foreground/60 hover:text-primary-foreground text-xs h-7 px-2" onClick={() => setShowLogin(true)}>
+              <Phone className="h-3 w-3 mr-1" /> Login
+            </Button>
+          )}
+          <Link
+            to="/admin/login"
+            className="text-primary-foreground/30 hover:text-primary-foreground/60 text-xs transition-colors"
+          >
+            Admin
+          </Link>
+        </div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-2xl">
           <img
@@ -282,6 +302,7 @@ export default function HomePage() {
           </div>
         )}
       </main>
+      <PhoneLoginDialog open={showLogin} onOpenChange={setShowLogin} />
     </div>
   );
 }
