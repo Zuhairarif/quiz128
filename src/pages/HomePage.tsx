@@ -6,7 +6,7 @@ import QuizCard from "@/components/QuizCard";
 import { Search, BookOpen, GraduationCap, FlaskConical, Calculator, Languages, BookText, Landmark, ChevronLeft, FileText, ClipboardList, ScrollText, Phone, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import bismillahImg from "@/assets/bismillah.webp";
+import bismillahImg from "@/assets/bismillah.png";
 import ssnLogo from "@/assets/ssn-logo.jpeg";
 import { useStudent } from "@/hooks/useStudent";
 import PhoneLoginDialog from "@/components/PhoneLoginDialog";
