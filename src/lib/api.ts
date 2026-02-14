@@ -53,7 +53,7 @@ export const adminApi = {
     return res.json();
   },
 
-  async submitQuiz(quizId: string, userName: string, answers: Record<string, string>, timeTakenSeconds: number, userAddress?: string, userPhone?: string) {
+  async submitQuiz(quizId: string, userName: string, answers: Record<string, string>, timeTakenSeconds: number, userAddress?: string, userPhone?: string, studentProfileId?: string) {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/submit-quiz`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -62,6 +62,7 @@ export const adminApi = {
         user_name: userName,
         user_address: userAddress || null,
         user_phone: userPhone || null,
+        student_profile_id: studentProfileId || null,
         answers,
         time_taken_seconds: timeTakenSeconds,
       }),

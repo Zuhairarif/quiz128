@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ChevronLeft, ChevronRight, Send, User, MapPin, Phone } from "lucide-react";
 import { toast } from "sonner";
 import LatexRenderer from "@/components/LatexRenderer";
+import { useStudent } from "@/hooks/useStudent";
+import PhoneLoginDialog from "@/components/PhoneLoginDialog";
 
 type Question = {
   id: string;
@@ -32,15 +34,17 @@ type Quiz = {
 export default function QuizAttemptPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const { student, isLoggedIn, loginWithPhone } = useStudent();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // User info
+  // User info (used if not logged in)
   const [userName, setUserName] = useState("");
   const [userAddress, setUserAddress] = useState("");
   const [userPhone, setUserPhone] = useState("");
+  const [showPhoneLogin, setShowPhoneLogin] = useState(false);
 
   const [started, setStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -48,6 +52,15 @@ export default function QuizAttemptPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const getElapsed = useElapsedTime();
+
+  // Pre-fill from student profile
+  useEffect(() => {
+    if (student) {
+      setUserName(student.full_name || "");
+      setUserAddress(student.address || "");
+      setUserPhone(student.phone_number || "");
+    }
+  }, [student]);
 
   useEffect(() => {
     if (!quizId) return;
@@ -65,13 +78,21 @@ export default function QuizAttemptPage() {
     if (submitted || submitting || !quiz) return;
     setSubmitting(true);
     try {
-      const result = await adminApi.submitQuiz(quiz.id, userName, answers, getElapsed(), userAddress, userPhone);
+      // If logged in, ensure profile is linked
+      const profileId = student?.id || undefined;
+      // Also login/create profile if phone was entered manually
+      if (!profileId && userPhone.trim().length >= 10) {
+        try {
+          await loginWithPhone(userPhone.replace(/\D/g, "").slice(-10), userName, userAddress);
+        } catch { /* non-critical */ }
+      }
+      const result = await adminApi.submitQuiz(quiz.id, userName, answers, getElapsed(), userAddress, userPhone, student?.id);
       navigate(`/result`, { state: { result }, replace: true });
     } catch (e: any) {
       toast.error(e.message || "Failed to submit quiz");
       setSubmitting(false);
     }
-  }, [quiz, userName, userAddress, userPhone, answers, getElapsed, navigate, submitted, submitting]);
+  }, [quiz, userName, userAddress, userPhone, answers, getElapsed, navigate, submitted, submitting, student, loginWithPhone]);
 
   const handleTimeExpire = useCallback(() => {
     if (!submitted) {

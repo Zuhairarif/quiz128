@@ -67,6 +67,7 @@ export type Database = {
           id: string
           quiz_id: string
           score: number
+          student_profile_id: string | null
           submitted_at: string
           time_taken_seconds: number | null
           total_marks: number
@@ -80,6 +81,7 @@ export type Database = {
           id?: string
           quiz_id: string
           score?: number
+          student_profile_id?: string | null
           submitted_at?: string
           time_taken_seconds?: number | null
           total_marks?: number
@@ -93,6 +95,7 @@ export type Database = {
           id?: string
           quiz_id?: string
           score?: number
+          student_profile_id?: string | null
           submitted_at?: string
           time_taken_seconds?: number | null
           total_marks?: number
@@ -107,6 +110,13 @@ export type Database = {
             columns: ["quiz_id"]
             isOneToOne: false
             referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_student_profile_id_fkey"
+            columns: ["student_profile_id"]
+            isOneToOne: false
+            referencedRelation: "student_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -150,6 +160,30 @@ export type Database = {
           title?: string
           total_time_minutes?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      student_profiles: {
+        Row: {
+          address: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone_number: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone_number: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone_number?: string
         }
         Relationships: []
       }

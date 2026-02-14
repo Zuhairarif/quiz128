@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { quiz_id, user_name, user_address, user_phone, answers, time_taken_seconds } = await req.json();
+    const { quiz_id, user_name, user_address, user_phone, answers, time_taken_seconds, student_profile_id } = await req.json();
 
     if (!quiz_id || !user_name || !answers) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -77,6 +77,7 @@ serve(async (req) => {
         user_name,
         user_address: user_address || null,
         user_phone: user_phone || null,
+        student_profile_id: student_profile_id || null,
         score,
         total_marks: totalMarks,
         correct_count: correctCount,
