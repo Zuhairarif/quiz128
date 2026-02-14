@@ -145,7 +145,7 @@ export default function HomePage() {
           <img
             src={bismillahImg}
             alt="Bismillah"
-            className="mx-auto mb-2 h-10 object-contain opacity-90"
+            className="mx-auto mb-2 h-20 object-contain opacity-90"
           />
           <h1 className="font-display text-2xl font-bold text-primary-foreground sm:text-3xl tracking-tight">
             Student Support Network
