@@ -232,6 +232,63 @@ serve(async (req) => {
       });
     }
 
+    // LIST notifications
+    if (body?.action === "list_notifications") {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ notifications: data || [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // CREATE notification
+    if (body?.action === "create_notification") {
+      const { title, message } = body;
+      const { error } = await supabase
+        .from("notifications")
+        .insert({ title, message });
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // TOGGLE notification active status
+    if (body?.action === "toggle_notification") {
+      const { id, is_active } = body;
+      const { error } = await supabase
+        .from("notifications")
+        .update({ is_active })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // DELETE notification
+    if (body?.action === "delete_notification") {
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("id", body.id);
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Invalid action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
