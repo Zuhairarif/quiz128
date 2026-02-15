@@ -10,6 +10,7 @@ import bismillahImg from "@/assets/bismillah.png";
 import ssnLogo from "@/assets/ssn-logo.jpeg";
 import { useStudent } from "@/hooks/useStudent";
 import PhoneLoginDialog from "@/components/PhoneLoginDialog";
+import NotificationBell from "@/components/NotificationBell";
 
 const CLASSES = [
   { label: "Class 6", value: "6", icon: BookOpen },
@@ -119,6 +120,7 @@ export default function HomePage() {
 
 
         <div className="absolute top-3 right-3 flex items-center gap-2">
+          <NotificationBell />
           {isLoggedIn ? (
             <>
               <Button variant="ghost" size="sm" className="text-primary-foreground/60 hover:text-primary-foreground text-xs h-7 px-2" onClick={() => navigate("/my-history")}>
@@ -130,7 +132,7 @@ export default function HomePage() {
             </>
           ) : (
             <Button variant="ghost" size="sm" className="text-primary-foreground/60 hover:text-primary-foreground text-xs h-7 px-2" onClick={() => setShowLogin(true)}>
-              <Phone className="h-3 w-3 mr-1" /> Login
+              <Phone className="h-3 w-3 mr-1" /> Register / Login
             </Button>
           )}
           <Link

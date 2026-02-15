@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { adminApi } from "@/lib/api";
 import Timer, { useElapsedTime } from "@/components/Timer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { ChevronLeft, ChevronRight, Send, Phone } from "lucide-react";
 import { toast } from "sonner";
 import LatexRenderer from "@/components/LatexRenderer";
@@ -34,14 +34,12 @@ type Quiz = {
 export default function QuizAttemptPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
-  const { student, isLoggedIn, loginWithPhone } = useStudent();
+  const { student, isLoggedIn } = useStudent();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // User info
-  const [userPhone, setUserPhone] = useState("");
   const [showPhoneLogin, setShowPhoneLogin] = useState(false);
 
   const [started, setStarted] = useState(false);
@@ -51,12 +49,6 @@ export default function QuizAttemptPage() {
   const [submitted, setSubmitted] = useState(false);
   const getElapsed = useElapsedTime();
 
-  // Pre-fill from student profile
-  useEffect(() => {
-    if (student) {
-      setUserPhone(student.phone_number || "");
-    }
-  }, [student]);
 
   useEffect(() => {
     if (!quizId) return;
@@ -71,26 +63,17 @@ export default function QuizAttemptPage() {
   }, [quizId]);
 
   const handleSubmit = useCallback(async () => {
-    if (submitted || submitting || !quiz) return;
+    if (submitted || submitting || !quiz || !student) return;
     setSubmitting(true);
     try {
-      // Ensure student profile exists
-      let profileId = student?.id;
-      const phone = userPhone.replace(/\D/g, "").slice(-10);
-      if (!profileId && phone.length >= 10) {
-        try {
-          const profile = await loginWithPhone(phone);
-          profileId = profile.id;
-        } catch { /* non-critical */ }
-      }
-      const displayName = student?.full_name || phone || "Student";
-      const result = await adminApi.submitQuiz(quiz.id, displayName, answers, getElapsed(), student?.address || undefined, phone, profileId);
+      const displayName = student.full_name || student.phone_number;
+      const result = await adminApi.submitQuiz(quiz.id, displayName, answers, getElapsed(), student.address || undefined, student.phone_number, student.id);
       navigate(`/result`, { state: { result }, replace: true });
     } catch (e: any) {
       toast.error(e.message || "Failed to submit quiz");
       setSubmitting(false);
     }
-  }, [quiz, userPhone, answers, getElapsed, navigate, submitted, submitting, student, loginWithPhone]);
+  }, [quiz, answers, getElapsed, navigate, submitted, submitting, student]);
 
   const handleTimeExpire = useCallback(() => {
     if (!submitted) {
@@ -139,24 +122,8 @@ export default function QuizAttemptPage() {
     );
   }
 
-  // Phone entry screen
+  // Must be logged in to start quiz
   if (!started) {
-    const canStart = isLoggedIn || userPhone.replace(/\D/g, "").length >= 10;
-
-    const handleStartQuiz = async () => {
-      if (!canStart) return;
-      if (!isLoggedIn) {
-        try {
-          const cleanPhone = userPhone.replace(/\D/g, "").slice(-10);
-          await loginWithPhone(cleanPhone);
-        } catch (e: any) {
-          toast.error(e.message || "Failed to save phone number");
-          return;
-        }
-      }
-      setStarted(true);
-    };
-
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <motion.div
@@ -170,39 +137,27 @@ export default function QuizAttemptPage() {
           </p>
           <div className="mt-6 space-y-4">
             {isLoggedIn ? (
-              <p className="text-sm text-muted-foreground">
-                Logged in as <span className="font-medium text-foreground">{student?.phone_number}</span>
-              </p>
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Logged in as <span className="font-medium text-foreground">{student?.full_name || student?.phone_number}</span>
+                </p>
+                <Button className="w-full" size="lg" onClick={() => setStarted(true)}>
+                  Start Quiz
+                </Button>
+              </>
             ) : (
-              <div>
-                <label className="mb-2 block text-sm font-medium text-card-foreground">Phone Number</label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="10-digit phone number"
-                    value={userPhone}
-                    onChange={(e) => setUserPhone(e.target.value)}
-                    className="pl-10"
-                    type="tel"
-                    maxLength={15}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && canStart) handleStartQuiz();
-                    }}
-                  />
-                </div>
-                <p className="mt-1.5 text-xs text-muted-foreground">Your quiz history will be saved with this number</p>
-              </div>
+              <>
+                <p className="text-sm text-muted-foreground text-center">
+                  Please register or login to start this quiz.
+                </p>
+                <Button className="w-full" size="lg" onClick={() => setShowPhoneLogin(true)}>
+                  <Phone className="mr-2 h-4 w-4" /> Register / Login to Start
+                </Button>
+              </>
             )}
-            <Button
-              className="w-full"
-              size="lg"
-              disabled={!canStart}
-              onClick={handleStartQuiz}
-            >
-              Start Quiz
-            </Button>
           </div>
         </motion.div>
+        <PhoneLoginDialog open={showPhoneLogin} onOpenChange={setShowPhoneLogin} />
       </div>
     );
   }

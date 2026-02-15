@@ -5,7 +5,7 @@ import { adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard, Plus, FileText, Users, LogOut, Trash2, Eye, Pencil, Globe, GlobeLock, Lock, Unlock,
+  LayoutDashboard, Plus, FileText, Users, LogOut, Trash2, Eye, Pencil, Globe, GlobeLock, Lock, Unlock, Bell,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -91,6 +91,9 @@ export default function AdminDashboard() {
             <h1 className="font-display text-xl font-bold text-card-foreground">SSN Admin</h1>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/admin/notifications")}>
+              <Bell className="mr-1 h-4 w-4" /> Notifications
+            </Button>
             <Button variant="outline" size="sm" onClick={() => navigate("/")}>
               <Eye className="mr-1 h-4 w-4" /> View Site
             </Button>

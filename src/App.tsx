@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminCreateQuiz from "./pages/AdminCreateQuiz";
 import AdminEditQuiz from "./pages/AdminEditQuiz";
 import AdminQuizAttempts from "./pages/AdminQuizAttempts";
+import AdminNotifications from "./pages/AdminNotifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/admin/create" element={<AdminRoute><AdminCreateQuiz /></AdminRoute>} />
               <Route path="/admin/edit/:quizId" element={<AdminRoute><AdminEditQuiz /></AdminRoute>} />
               <Route path="/admin/quiz/:quizId/attempts" element={<AdminRoute><AdminQuizAttempts /></AdminRoute>} />
+              <Route path="/admin/notifications" element={<AdminRoute><AdminNotifications /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

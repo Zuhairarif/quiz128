@@ -11,7 +11,8 @@ type StudentProfile = {
 type StudentContextType = {
   student: StudentProfile | null;
   loading: boolean;
-  loginWithPhone: (phone: string, name?: string, address?: string) => Promise<StudentProfile>;
+  loginWithPhone: (phone: string) => Promise<StudentProfile>;
+  registerWithPhone: (phone: string, name: string, address: string) => Promise<StudentProfile>;
   logout: () => void;
   isLoggedIn: boolean;
 };
@@ -40,8 +41,27 @@ export function StudentProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loginWithPhone = useCallback(async (phone: string, name?: string, address?: string): Promise<StudentProfile> => {
-    // Try to find existing profile
+  // Login: phone only, must already be registered
+  const loginWithPhone = useCallback(async (phone: string): Promise<StudentProfile> => {
+    const { data: existing } = await supabase
+      .from("student_profiles")
+      .select("*")
+      .eq("phone_number", phone)
+      .single();
+
+    if (!existing) {
+      throw new Error("Phone number not registered. Please register first.");
+    }
+
+    const profile = existing as StudentProfile;
+    setStudent(profile);
+    localStorage.setItem("student_phone", phone);
+    return profile;
+  }, []);
+
+  // Register: phone + name + address, all mandatory
+  const registerWithPhone = useCallback(async (phone: string, name: string, address: string): Promise<StudentProfile> => {
+    // Check if already exists
     const { data: existing } = await supabase
       .from("student_profiles")
       .select("*")
@@ -49,24 +69,12 @@ export function StudentProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (existing) {
-      // Update name/address only if provided
-      const updates: Record<string, string> = {};
-      if (name && name !== existing.full_name) updates.full_name = name;
-      if (address && address !== existing.address) updates.address = address;
-      if (Object.keys(updates).length > 0) {
-        await supabase.from("student_profiles").update(updates).eq("id", existing.id);
-        Object.assign(existing, updates);
-      }
-      const profile = existing as StudentProfile;
-      setStudent(profile);
-      localStorage.setItem("student_phone", phone);
-      return profile;
+      throw new Error("This phone number is already registered. Please login instead.");
     }
 
-    // Create new profile
     const { data: newProfile, error } = await supabase
       .from("student_profiles")
-      .insert({ phone_number: phone, full_name: name || null, address: address || null })
+      .insert({ phone_number: phone, full_name: name, address })
       .select()
       .single();
 
@@ -83,7 +91,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <StudentContext.Provider value={{ student, loading, loginWithPhone, logout, isLoggedIn: !!student }}>
+    <StudentContext.Provider value={{ student, loading, loginWithPhone, registerWithPhone, logout, isLoggedIn: !!student }}>
       {children}
     </StudentContext.Provider>
   );
