@@ -258,12 +258,35 @@ export default function AdminCreateQuiz() {
                     <LatexRenderer text={q.question_text} />
                   </div>
 
-                  <Textarea
-                    value={q.question_text}
-                    onChange={(e) => updateQuestion(i, "question_text", e.target.value)}
-                    className="mb-3"
-                    rows={2}
-                  />
+                  {/* Question Image */}
+                  {q.image_url && (
+                    <div className="relative mb-3 inline-block">
+                      <img src={q.image_url} alt={`Q${i + 1} image`} className="max-h-48 rounded-lg border border-border" />
+                      <button onClick={() => removeQuestionImage(i)} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="mb-3 flex items-center gap-2">
+                    <Textarea
+                      value={q.question_text}
+                      onChange={(e) => updateQuestion(i, "question_text", e.target.value)}
+                      rows={2}
+                      className="flex-1"
+                    />
+                    <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground hover:bg-muted/80">
+                      <Image className="h-4 w-4" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleQuestionImageUpload(i, f);
+                        }}
+                      />
+                    </label>
+                  </div>
 
                   <div className="grid gap-2 sm:grid-cols-2">
                     {(["A", "B", "C", "D"] as const).map((opt) => {
