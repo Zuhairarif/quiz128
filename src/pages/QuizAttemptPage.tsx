@@ -21,6 +21,7 @@ type Question = {
   option_c: string;
   option_d: string;
   question_order: number;
+  image_url: string | null;
 };
 
 type Quiz = {
