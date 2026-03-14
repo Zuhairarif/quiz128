@@ -96,6 +96,28 @@ export default function AdminEditQuiz() {
 
   const allAnswersSet = questions.every((q) => q.correct_option);
 
+  const handleQuestionImageUpload = async (index: number, file: File) => {
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `quiz-images/${Date.now()}-${index}.${ext}`;
+      const { error } = await supabase.storage.from("question-images").upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("question-images").getPublicUrl(path);
+      setQuestions((prev) =>
+        prev.map((q, i) => (i === index ? { ...q, image_url: urlData.publicUrl } : q))
+      );
+      toast.success("Image uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload image");
+    }
+  };
+
+  const removeQuestionImage = (index: number) => {
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === index ? { ...q, image_url: null } : q))
+    );
+  };
+
   const handleSave = async (newStatus?: string) => {
     const saveStatus = newStatus || status;
     if (saveStatus === "published" && !allAnswersSet) {
