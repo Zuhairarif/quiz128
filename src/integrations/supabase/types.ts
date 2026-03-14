@@ -79,6 +79,7 @@ export type Database = {
           correct_option: string | null
           created_at: string
           id: string
+          image_url: string | null
           option_a: string
           option_b: string
           option_c: string
@@ -91,6 +92,7 @@ export type Database = {
           correct_option?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           option_a: string
           option_b: string
           option_c: string
@@ -103,6 +105,7 @@ export type Database = {
           correct_option?: string | null
           created_at?: string
           id?: string
+          image_url?: string | null
           option_a?: string
           option_b?: string
           option_c?: string

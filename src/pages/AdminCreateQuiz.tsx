@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Upload, Loader2, Save, ArrowLeft, AlertCircle } from "lucide-react";
+import { Upload, Loader2, Save, ArrowLeft, AlertCircle, Image, X } from "lucide-react";
 import LatexRenderer from "@/components/LatexRenderer";
+import { supabase } from "@/integrations/supabase/client";
 
 type ExtractedQuestion = {
   question_text: string;
@@ -17,6 +18,7 @@ type ExtractedQuestion = {
   option_c: string;
   option_d: string;
   correct_option: string | null;
+  image_url: string | null;
 };
 
 const CLASS_OPTIONS = [
@@ -66,7 +68,7 @@ export default function AdminCreateQuiz() {
 
       const result = await adminApi.extractQuiz(base64, file.name);
       setTitle(result.title || file.name.replace(/\.(pdf|txt)$/i, ""));
-      setQuestions(result.questions || []);
+      setQuestions((result.questions || []).map((q: any) => ({ ...q, image_url: q.image_url || null })));
       toast.success(`Extracted ${result.questions?.length || 0} questions`);
 
       if (!result.has_answers) {
@@ -77,6 +79,28 @@ export default function AdminCreateQuiz() {
     } finally {
       setExtracting(false);
     }
+  };
+
+  const handleQuestionImageUpload = async (index: number, file: File) => {
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `quiz-images/${Date.now()}-${index}.${ext}`;
+      const { error } = await supabase.storage.from("question-images").upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("question-images").getPublicUrl(path);
+      setQuestions((prev) =>
+        prev.map((q, i) => (i === index ? { ...q, image_url: urlData.publicUrl } : q))
+      );
+      toast.success("Image uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload image");
+    }
+  };
+
+  const removeQuestionImage = (index: number) => {
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === index ? { ...q, image_url: null } : q))
+    );
   };
 
   const updateQuestion = (index: number, field: keyof ExtractedQuestion, value: string) => {
@@ -234,12 +258,35 @@ export default function AdminCreateQuiz() {
                     <LatexRenderer text={q.question_text} />
                   </div>
 
-                  <Textarea
-                    value={q.question_text}
-                    onChange={(e) => updateQuestion(i, "question_text", e.target.value)}
-                    className="mb-3"
-                    rows={2}
-                  />
+                  {/* Question Image */}
+                  {q.image_url && (
+                    <div className="relative mb-3 inline-block">
+                      <img src={q.image_url} alt={`Q${i + 1} image`} className="max-h-48 rounded-lg border border-border" />
+                      <button onClick={() => removeQuestionImage(i)} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="mb-3 flex items-center gap-2">
+                    <Textarea
+                      value={q.question_text}
+                      onChange={(e) => updateQuestion(i, "question_text", e.target.value)}
+                      rows={2}
+                      className="flex-1"
+                    />
+                    <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground hover:bg-muted/80">
+                      <Image className="h-4 w-4" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleQuestionImageUpload(i, f);
+                        }}
+                      />
+                    </label>
+                  </div>
 
                   <div className="grid gap-2 sm:grid-cols-2">
                     {(["A", "B", "C", "D"] as const).map((opt) => {

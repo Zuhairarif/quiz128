@@ -14,6 +14,7 @@ type Detail = {
   correct_option: string;
   selected_option: string | null;
   is_correct: boolean;
+  image_url?: string | null;
 };
 
 type LeaderboardEntry = {
@@ -172,6 +173,9 @@ export default function ResultPage() {
                   <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
                 )}
               </div>
+              {d.image_url && (
+                <img src={d.image_url} alt={`Q${i + 1}`} className="mt-2 max-h-48 rounded-lg border border-border" />
+              )}
               <div className="mt-3 space-y-1 text-sm">
                 <p>
                   <span className="text-muted-foreground">Your answer: </span>

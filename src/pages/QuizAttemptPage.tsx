@@ -21,6 +21,7 @@ type Question = {
   option_c: string;
   option_d: string;
   question_order: number;
+  image_url: string | null;
 };
 
 type Quiz = {
@@ -204,6 +205,10 @@ export default function QuizAttemptPage() {
           <h2 className="font-display text-xl font-semibold text-foreground sm:text-2xl">
             <LatexRenderer text={cleanQuestionText(currentQ.question_text)} />
           </h2>
+
+          {currentQ.image_url && (
+            <img src={currentQ.image_url} alt={`Question ${currentIndex + 1}`} className="mt-4 max-h-64 rounded-lg border border-border" />
+          )}
 
           <div className="mt-6 space-y-3">
             {options.map((opt) => (
