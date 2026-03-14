@@ -78,6 +78,7 @@ export default function AdminEditQuiz() {
             option_c: q.option_c,
             option_d: q.option_d,
             correct_option: q.correct_option,
+            image_url: q.image_url || null,
           }))
       );
       setLoading(false);
