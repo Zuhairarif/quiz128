@@ -206,6 +206,10 @@ export default function QuizAttemptPage() {
             <LatexRenderer text={cleanQuestionText(currentQ.question_text)} />
           </h2>
 
+          {currentQ.image_url && (
+            <img src={currentQ.image_url} alt={`Question ${currentIndex + 1}`} className="mt-4 max-h-64 rounded-lg border border-border" />
+          )}
+
           <div className="mt-6 space-y-3">
             {options.map((opt) => (
               <button
