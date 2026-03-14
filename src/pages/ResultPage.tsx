@@ -14,6 +14,7 @@ type Detail = {
   correct_option: string;
   selected_option: string | null;
   is_correct: boolean;
+  image_url?: string | null;
 };
 
 type LeaderboardEntry = {
