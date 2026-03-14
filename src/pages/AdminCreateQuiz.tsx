@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Upload, Loader2, Save, ArrowLeft, AlertCircle } from "lucide-react";
+import { Upload, Loader2, Save, ArrowLeft, AlertCircle, Image, X } from "lucide-react";
 import LatexRenderer from "@/components/LatexRenderer";
+import { supabase } from "@/integrations/supabase/client";
 
 type ExtractedQuestion = {
   question_text: string;
@@ -17,6 +18,7 @@ type ExtractedQuestion = {
   option_c: string;
   option_d: string;
   correct_option: string | null;
+  image_url: string | null;
 };
 
 const CLASS_OPTIONS = [
