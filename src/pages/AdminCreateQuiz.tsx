@@ -68,7 +68,7 @@ export default function AdminCreateQuiz() {
 
       const result = await adminApi.extractQuiz(base64, file.name);
       setTitle(result.title || file.name.replace(/\.(pdf|txt)$/i, ""));
-      setQuestions(result.questions || []);
+      setQuestions((result.questions || []).map((q: any) => ({ ...q, image_url: q.image_url || null })));
       toast.success(`Extracted ${result.questions?.length || 0} questions`);
 
       if (!result.has_answers) {
@@ -79,6 +79,28 @@ export default function AdminCreateQuiz() {
     } finally {
       setExtracting(false);
     }
+  };
+
+  const handleQuestionImageUpload = async (index: number, file: File) => {
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `quiz-images/${Date.now()}-${index}.${ext}`;
+      const { error } = await supabase.storage.from("question-images").upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("question-images").getPublicUrl(path);
+      setQuestions((prev) =>
+        prev.map((q, i) => (i === index ? { ...q, image_url: urlData.publicUrl } : q))
+      );
+      toast.success("Image uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload image");
+    }
+  };
+
+  const removeQuestionImage = (index: number) => {
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === index ? { ...q, image_url: null } : q))
+    );
   };
 
   const updateQuestion = (index: number, field: keyof ExtractedQuestion, value: string) => {
