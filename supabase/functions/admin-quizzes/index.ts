@@ -138,6 +138,7 @@ serve(async (req) => {
           option_d: q.option_d,
           correct_option: q.correct_option || null,
           question_order: i,
+          image_url: q.image_url || null,
         }));
 
         const { error: qError } = await supabase.from("questions").insert(questionsToInsert);
